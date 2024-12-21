@@ -22,7 +22,12 @@ with such task.
 - 🐘 Seamless integration with Gradle and ShadowJar
 - 🍵 Works on all Java versions from 8 to 22
 
+### Examples
+- [Bukkit plugin](/tree/main/examples/bukkit-java)
+- [Bukkit plugin with Kotlin](/tree/main/examples/bukkit-kotlin)
+
 ## Usage
+
 
 ### With Gradle plugin (recommended)
 
