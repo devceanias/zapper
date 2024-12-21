@@ -23,6 +23,8 @@
  */
 package revxrsal.zapper.classloader;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.net.URL;
 import java.net.URLClassLoader;
 
@@ -40,7 +42,7 @@ public final class IsolatedClassLoader extends URLClassLoader {
         super(new URL[0]);
     }
 
-    public IsolatedClassLoader(URL[] urls) {
+    public IsolatedClassLoader(@NotNull URL[] urls) {
         /*
          * ClassLoader#getSystemClassLoader returns the AppClassLoader
          *

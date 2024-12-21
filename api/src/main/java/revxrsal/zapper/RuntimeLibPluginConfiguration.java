@@ -18,13 +18,19 @@ import java.util.stream.Collectors;
 
 public final class RuntimeLibPluginConfiguration {
 
-    private final String libsFolder;
-    private final String relocationPrefix;
-    private final List<Dependency> dependencies;
-    private final List<Repository> repositories;
-    private final List<Relocation> relocations;
+    private final @NotNull String libsFolder;
+    private final @NotNull String relocationPrefix;
+    private final @NotNull List<Dependency> dependencies;
+    private final @NotNull List<Repository> repositories;
+    private final @NotNull List<Relocation> relocations;
 
-    RuntimeLibPluginConfiguration(String libsFolder, String relocationPrefix, List<Dependency> dependencies, List<Repository> repositories, List<Relocation> relocations) {
+    RuntimeLibPluginConfiguration(
+            @NotNull String libsFolder,
+            @NotNull String relocationPrefix,
+            @NotNull List<Dependency> dependencies,
+            @NotNull List<Repository> repositories,
+            @NotNull List<Relocation> relocations
+    ) {
         this.libsFolder = libsFolder;
         this.relocationPrefix = relocationPrefix;
         this.dependencies = dependencies;
@@ -105,23 +111,23 @@ public final class RuntimeLibPluginConfiguration {
         }
     }
 
-    public String getLibsFolder() {
+    public @NotNull String getLibsFolder() {
         return this.libsFolder;
     }
 
-    public String getRelocationPrefix() {
+    public @NotNull String getRelocationPrefix() {
         return this.relocationPrefix;
     }
 
-    public List<Dependency> getDependencies() {
+    public @NotNull List<Dependency> getDependencies() {
         return this.dependencies;
     }
 
-    public List<Repository> getRepositories() {
+    public @NotNull List<Repository> getRepositories() {
         return this.repositories;
     }
 
-    public List<Relocation> getRelocations() {
+    public @NotNull List<Relocation> getRelocations() {
         return this.relocations;
     }
 

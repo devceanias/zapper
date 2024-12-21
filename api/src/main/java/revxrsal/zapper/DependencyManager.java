@@ -107,16 +107,16 @@ public final class DependencyManager implements DependencyScope {
         dependencies.add(dependency);
     }
 
-    public void dependency(String dependency) {
+    public void dependency(@NotNull String dependency) {
         String[] parts = COLON.split(dependency);
         dependencies.add(new Dependency(parts[0], parts[1], parts[2]));
     }
 
-    public void dependency(String groupId, String artifactId, String version) {
+    public void dependency(@NotNull String groupId, @NotNull String artifactId, @NotNull String version) {
         dependencies.add(new Dependency(groupId, artifactId, version));
     }
 
-    public void relocate(Relocation relocation) {
+    public void relocate(@NotNull Relocation relocation) {
         relocations.add(relocation);
     }
 
