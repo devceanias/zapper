@@ -1,7 +1,7 @@
 plugins {
     id("io.freefair.lombok") version "8.11"
     id("com.gradleup.shadow") version "8.3.2"
-    id("io.github.revxrsal.zapper") version "1.0.0"
+    id("io.github.revxrsal.zapper") version "1.0.1"
     kotlin("jvm")
 }
 
@@ -27,7 +27,7 @@ zapper {
     repositories { includeProjectRepositories() }
 
     // relocation path is com.example.plugin.libs.kotlin
-    relocate("kotlin", "kotlin")
+//    relocate("kotlin", "kotlin")
 }
 
 kotlin {
