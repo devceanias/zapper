@@ -7,7 +7,7 @@ public class ExamplePlugin extends ZapperJavaPlugin {
 
     @Override
     public void onEnable() {
-        System.out.println(Moshi.class);
+        System.out.println("This class is relocated: " + Moshi.class);
     }
 
     @Override

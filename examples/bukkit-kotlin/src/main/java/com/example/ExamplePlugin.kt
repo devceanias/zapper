@@ -6,12 +6,13 @@ class ExamplePlugin : ZapperJavaPlugin() {
 
     companion object {
         init {
-            println("Kotlin is already loaded!")
+            println("Nice! Kotlin has loaded!")
         }
     }
 
     override fun onEnable() {
         println("Hello from Kotlin!")
+        println("This class is relocated: ${KotlinVersion::class.java}")
     }
 
     override fun onDisable() {
