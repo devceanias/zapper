@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -52,8 +53,10 @@ public final class RuntimeLibPluginConfiguration {
     }
 
     private static @NotNull List<Relocation> parseRelocations() throws IOException {
-        List<Relocation> relocations = new ArrayList<>();
         InputStream stream = ClassLoaderReader.getResource("zapper/relocations.txt");
+        if (stream == null)
+            return Collections.emptyList();
+        List<Relocation> relocations = new ArrayList<>();
         for (String line : readAllLines(stream)) {
             String[] split = line.split(":");
             relocations.add(new Relocation(split[0], split[1]));
@@ -62,8 +65,10 @@ public final class RuntimeLibPluginConfiguration {
     }
 
     private static @NotNull List<Dependency> parseDependencies() {
-        List<Dependency> dependencies = new ArrayList<>();
         InputStream stream = ClassLoaderReader.getResource("zapper/dependencies.txt");
+        if (stream == null)
+            return Collections.emptyList();
+        List<Dependency> dependencies = new ArrayList<>();
         for (String line : readAllLines(stream)) {
             String[] split = line.split(":");
             dependencies.add(new Dependency(
@@ -76,8 +81,10 @@ public final class RuntimeLibPluginConfiguration {
     }
 
     private static @NotNull List<Repository> parseRepositories() {
-        List<Repository> repos = new ArrayList<>();
         InputStream stream = ClassLoaderReader.getResource("zapper/repositories.txt");
+        if (stream == null)
+            return Collections.emptyList();
+        List<Repository> repos = new ArrayList<>();
         for (String line : readAllLines(stream)) {
             repos.add(Repository.maven(line));
         }
@@ -92,7 +99,7 @@ public final class RuntimeLibPluginConfiguration {
         return properties;
     }
 
-    private static @SneakyThrows @NotNull List<String> readAllLines(InputStream inputStream) {
+    private static @SneakyThrows @NotNull List<String> readAllLines(@NotNull InputStream inputStream) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
             return reader.lines().collect(Collectors.toList());
         }

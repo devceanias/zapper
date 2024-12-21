@@ -26,6 +26,7 @@ package revxrsal.zapper.util;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,7 +72,7 @@ public final class ClassLoaderReader {
     }
 
     @Contract("null -> fail")
-    public static InputStream getResource(String fileName) {
+    public static @Nullable InputStream getResource(String fileName) {
         if (fileName == null) {
             throw new IllegalArgumentException("File name cannot be null");
         } else {
@@ -84,7 +85,7 @@ public final class ClassLoaderReader {
                     connection.setUseCaches(false);
                     return connection.getInputStream();
                 }
-            } catch (IOException var4) {
+            } catch (IOException e) {
                 return null;
             }
         }
