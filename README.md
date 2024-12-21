@@ -33,7 +33,7 @@ build.gradle:
 ```groovy
 plugins {
   id 'com.github.johnrengelman.shadow' version '8.1.1'
-  id 'io.github.revxrsal.zapper' version '1.0.0'
+  id 'io.github.revxrsal.zapper' version '1.0.1'
 }
 ```
 
@@ -42,7 +42,7 @@ build.gradle.kts:
 ```groovy
 plugins {
   id("com.github.johnrengelman.shadow") version "8.1.1"
-  id("io.github.revxrsal.zapper") version "1.0.0"
+  id("io.github.revxrsal.zapper") version "1.0.1"
 }
 ```
 
@@ -118,7 +118,7 @@ To add the Zapper API:
 <dependency>
     <groupId>io.github.revxrsal</groupId>
     <artifactId>zapper.api</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <scope>compile</scope>
 </dependency>
 ```
