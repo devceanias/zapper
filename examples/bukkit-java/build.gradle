@@ -15,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    zap 'com.zaxxer:HikariCP:6.2.1'
+    zap 'com.squareup.moshi:moshi:1.15.2'
     compileOnly 'org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT'
 }
 
@@ -25,6 +25,6 @@ zapper {
 
     repositories { includeProjectRepositories() }
 
-    // relocation path is com.example.plugin.libs.hikaricp
-    relocate 'com.zaxxer.hikari', 'hikaricp'
+    // relocation path is com.example.plugin.libs.moshi
+    relocate 'com.squareup.moshi', 'moshi'
 }
