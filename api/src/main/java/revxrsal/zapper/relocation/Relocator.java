@@ -48,8 +48,8 @@ public final class Relocator {
     }
 
     private static final List<Dependency> dependencies = Arrays.asList(
-            new Dependency("org.ow2.asm", "asm", "9.2"),
-            new Dependency("org.ow2.asm", "asm-commons", "9.2"),
+            new Dependency("org.ow2.asm", "asm", "9.7.1"),
+            new Dependency("org.ow2.asm", "asm-commons", "9.7.1"),
             new Dependency("me.lucko", "jar-relocator", "1.7")
     );
 
