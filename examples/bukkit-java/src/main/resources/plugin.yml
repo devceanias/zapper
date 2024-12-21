@@ -1,0 +1,4 @@
+name: ExamplePlugin
+main: com.example.ExamplePlugin
+version: 0.0.0
+author: Example Author
