@@ -62,28 +62,33 @@ public final class DependencyManager implements DependencyScope {
                 File file = new File(directory, String.format("%s.%s-%s.jar", dep.getGroupId(), dep.getArtifactId(), dep.getVersion()));
                 File relocated = new File(directory, String.format("%s.%s-%s-relocated.jar", dep.getGroupId(),
                         dep.getArtifactId(), dep.getVersion()));
-                if (relocated.exists()) {
+                if (hasRelocations() && relocated.exists()) {
                     loaderWrapper.addURL(relocated.toURI().toURL());
                     continue;
                 }
                 if (!file.exists()) {
+                    boolean succeeded = false;
                     List<String> failedRepos = null;
                     for (Repository repository : repositories) {
                         DependencyDownloadResult result = dep.download(file, repository);
-                        if (result.wasSuccessful())
+                        if (result.wasSuccessful()) {
+                            succeeded = true;
                             break;
-                        else
+                        } else
                             (failedRepos == null ? failedRepos = new ArrayList<>() : failedRepos).add(repository.toString());
                     }
-                    if (failedRepos != null) {
+                    if (failedRepos != null && !succeeded) {
                         throw new DependencyDownloadException(dep, "Could not find dependency in any of the following repositories: " + String.join("\n", failedRepos));
                     }
                 }
-                if (!relocations.isEmpty() && !relocated.exists()) {
+                if (hasRelocations() && !relocated.exists()) {
                     Relocator.relocate(file, relocated, relocations);
                     file.delete(); // no longer need the original dependency
                 }
-                loaderWrapper.addURL(relocated.toURI().toURL());
+                if (hasRelocations())
+                    loaderWrapper.addURL(relocated.toURI().toURL());
+                else
+                    loaderWrapper.addURL(file.toURI().toURL());
             }
         } catch (DependencyDownloadException e) {
             if (e.getCause() instanceof UnknownHostException) {
@@ -118,4 +123,9 @@ public final class DependencyManager implements DependencyScope {
     public void repository(@NotNull Repository repository) {
         repositories.add(repository);
     }
+    
+    public boolean hasRelocations() {
+        return !relocations.isEmpty();
+    }
+    
 }
