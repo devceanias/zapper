@@ -23,15 +23,18 @@
  */
 package revxrsal.zapper;
 
+import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import revxrsal.zapper.classloader.URLClassLoaderWrapper;
+import revxrsal.zapper.meta.MetaReader;
 import revxrsal.zapper.relocation.Relocation;
 import revxrsal.zapper.relocation.Relocator;
 import revxrsal.zapper.repository.Repository;
 
 import java.io.File;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -44,26 +47,29 @@ public final class DependencyManager implements DependencyScope {
     private static final Pattern COLON = Pattern.compile(":");
 
     private final File directory;
-    private final URLClassLoaderWrapper loaderWrapper;
+    private final URLClassLoaderWrapper classLoader;
 
     private final List<Dependency> dependencies = new ArrayList<>();
     private final Set<Repository> repositories = new LinkedHashSet<>();
     private final List<Relocation> relocations = new ArrayList<>();
+    private final MetaReader metaReader = MetaReader.create();
 
-    public DependencyManager(@NotNull File directory, @NotNull URLClassLoaderWrapper loaderWrapper) {
+    public DependencyManager(@NotNull File directory, @NotNull URLClassLoaderWrapper classLoader) {
         this.directory = directory;
-        this.loaderWrapper = loaderWrapper;
+        this.classLoader = classLoader;
         this.repositories.add(Repository.mavenCentral());
     }
 
+    @SneakyThrows
     public void load() {
         try {
+            List<Path> paths = new ArrayList<>();
             for (Dependency dep : dependencies) {
                 File file = new File(directory, String.format("%s.%s-%s.jar", dep.getGroupId(), dep.getArtifactId(), dep.getVersion()));
                 File relocated = new File(directory, String.format("%s.%s-%s-relocated.jar", dep.getGroupId(),
                         dep.getArtifactId(), dep.getVersion()));
                 if (hasRelocations() && relocated.exists()) {
-                    loaderWrapper.addURL(relocated.toURI().toURL());
+                    paths.add(relocated.toPath());
                     continue;
                 }
                 if (!file.exists()) {
@@ -86,19 +92,17 @@ public final class DependencyManager implements DependencyScope {
                     file.delete(); // no longer need the original dependency
                 }
                 if (hasRelocations())
-                    loaderWrapper.addURL(relocated.toURI().toURL());
+                    paths.add(relocated.toPath());
                 else
-                    loaderWrapper.addURL(file.toURI().toURL());
+                    paths.add(file.toPath());
             }
+            for (Path path : paths)
+                classLoader.addURL(path.toUri().toURL());
         } catch (DependencyDownloadException e) {
             if (e.getCause() instanceof UnknownHostException) {
-                Bukkit.getLogger().info("[Zapper] It appears you do not have an internet connection. Extract the zip in https://bit.ly/3cd3wGe at /Zapper/libraries.");
+                Bukkit.getLogger().info("[" + metaReader.pluginName() + "] It appears you do not have an internet connection. Please provide an internet connection for once at least.");
                 FAILED_TO_DOWNLOAD = true;
             } else throw e;
-        } catch (RuntimeException d) {
-            throw d;
-        } catch (Throwable t) {
-            throw new RuntimeException(t);
         }
     }
 
@@ -123,9 +127,9 @@ public final class DependencyManager implements DependencyScope {
     public void repository(@NotNull Repository repository) {
         repositories.add(repository);
     }
-    
+
     public boolean hasRelocations() {
         return !relocations.isEmpty();
     }
-    
+
 }

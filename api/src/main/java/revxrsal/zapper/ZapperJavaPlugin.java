@@ -1,10 +1,9 @@
 package revxrsal.zapper;
 
 import org.bukkit.Bukkit;
-import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import revxrsal.zapper.classloader.URLClassLoaderWrapper;
-import revxrsal.zapper.util.ClassLoaderReader;
+import revxrsal.zapper.meta.MetaReader;
 
 import java.io.File;
 import java.net.URLClassLoader;
@@ -18,13 +17,13 @@ import java.net.URLClassLoader;
 public abstract class ZapperJavaPlugin extends JavaPlugin {
 
     static {
+        MetaReader meta = MetaReader.create();
         RuntimeLibPluginConfiguration config = RuntimeLibPluginConfiguration.parse();
-        File libraries = new File(ClassLoaderReader.getDataFolder(ZapperJavaPlugin.class), config.getLibsFolder());
+        File libraries = new File(meta.dataFolder(), config.getLibsFolder());
         if (!libraries.exists()) {
-            PluginDescriptionFile pdf = ClassLoaderReader.getDescription(ZapperJavaPlugin.class);
             // "ur plugin slow!!"
-            Bukkit.getLogger().info("[" + pdf.getName() + "] It appears you're running " + pdf.getName() + " for the first time.");
-            Bukkit.getLogger().info("[" + pdf.getName() + "] Please give me a few seconds to install dependencies. This is a one-time process.");
+            Bukkit.getLogger().info("[" + meta.pluginName() + "] It appears you're running " + meta.pluginName() + " for the first time.");
+            Bukkit.getLogger().info("[" + meta.pluginName() + "] Please give me a few seconds to install dependencies. This is a one-time process.");
         }
         DependencyManager dependencyManager = new DependencyManager(
                 libraries,
