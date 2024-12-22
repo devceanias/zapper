@@ -12,6 +12,7 @@ plugins {
 
 include("api")
 include("gradle-plugin")
+include("internal-paper-stubs")
 
 /*
  * -------- Example projects --------
@@ -28,3 +29,4 @@ exampleProjects.forEach { project ->
     include("examples:$project")
     findProject(":examples:$project")?.name = project
 }
+
