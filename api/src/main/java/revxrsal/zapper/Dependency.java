@@ -23,6 +23,7 @@
  */
 package revxrsal.zapper;
 
+import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -62,7 +63,7 @@ public final class Dependency {
                 this.version,
                 this.artifactId,
                 this.version,
-                classifier == null ? "" : '-' + classifier
+                classifier == null || StringUtils.isBlank(classifier) ? "" : '-' + classifier
         );
     }
 
