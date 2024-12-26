@@ -25,6 +25,7 @@ package revxrsal.zapper;
 
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import revxrsal.zapper.repository.Repository;
 
 import java.io.File;
@@ -40,7 +41,7 @@ import java.util.Objects;
  */
 public final class Dependency {
 
-    private static final String MAVEN_PATH = "%s/%s/%s/%s-%s.jar";
+    private static final String MAVEN_PATH = "%s/%s/%s/%s-%s%s.jar";
 
     private final String groupId;
     private final String artifactId;
@@ -48,6 +49,10 @@ public final class Dependency {
     private final String mavenPath;
 
     public Dependency(@NotNull String groupId, @NotNull String artifactId, @NotNull String version) {
+        this(groupId, artifactId, version, null);
+    }
+
+    public Dependency(@NotNull String groupId, @NotNull String artifactId, @NotNull String version, @Nullable String classifier) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
@@ -56,7 +61,8 @@ public final class Dependency {
                 this.artifactId,
                 this.version,
                 this.artifactId,
-                this.version
+                this.version,
+                classifier == null ? "" : '-' + classifier
         );
     }
 
