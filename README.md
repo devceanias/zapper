@@ -23,8 +23,8 @@ with such task.
 - 🍵 Works on all Java versions from 8 to 22
 
 ### Examples
-- [Bukkit plugin](/tree/main/examples/bukkit-java)
-- [Bukkit plugin with Kotlin](/tree/main/examples/bukkit-kotlin)
+- [Bukkit plugin](https://github.com/Revxrsal/Zapper/tree/main/examples/bukkit-java)
+- [Bukkit plugin with Kotlin](https://github.com/Revxrsal/Zapper/tree/main/examples/bukkit-kotlin)
 
 ## Usage
 
