@@ -42,7 +42,7 @@ import java.util.Objects;
  */
 public final class Dependency {
 
-    private static final String MAVEN_PATH = "%s/%s/%s/%s-%s%s.jar";
+    private static final String MAVEN_PATH = "%s/%s/%s/%s-%s%s";
 
     private final String groupId;
     private final String artifactId;
@@ -120,5 +120,15 @@ public final class Dependency {
 
     public String getMavenPath() {
         return this.mavenPath;
+    }
+
+    @Override
+    public String toString() {
+        return "Dependency{" +
+                "groupId='" + groupId + '\'' +
+                ", artifactId='" + artifactId + '\'' +
+                ", version='" + version + '\'' +
+                ", mavenPath='" + mavenPath + '\'' +
+                '}';
     }
 }

@@ -23,6 +23,16 @@ public interface Repository {
     @NotNull URL resolve(@NotNull Dependency dependency) throws Exception;
 
     /**
+     * Resolves the pom URL of dependency that is downloaded.
+     *
+     * @param dependency Dependency to resolve
+     * @return The URL to resolve
+     * @throws Exception any exception that indicates that this repository could not
+     *                   resolve the dependency
+     */
+    @NotNull URL resolvePom(@NotNull Dependency dependency) throws Exception;
+
+    /**
      * Creates a Maven repository from the specified URL.
      *
      * @param url the URL of the repository

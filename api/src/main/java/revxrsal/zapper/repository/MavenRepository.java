@@ -77,7 +77,12 @@ final class MavenRepository implements Repository {
     }
 
     public @NotNull URL resolve(@NotNull Dependency dependency) throws Exception {
-        return new URL(repoURL + dependency.getMavenPath());
+        return new URL(repoURL + dependency.getMavenPath() + ".jar");
+    }
+
+    @Override
+    public @NotNull URL resolvePom(@NotNull Dependency dependency) throws Exception {
+        return new URL(repoURL + dependency.getMavenPath() + ".pom");
     }
 
     @Override
