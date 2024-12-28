@@ -26,6 +26,7 @@ package revxrsal.zapper;
 import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import revxrsal.zapper.classloader.URLClassLoaderWrapper;
 import revxrsal.zapper.meta.MetaReader;
 import revxrsal.zapper.relocation.Relocation;
@@ -113,11 +114,15 @@ public final class DependencyManager implements DependencyScope {
 
     public void dependency(@NotNull String dependency) {
         String[] parts = COLON.split(dependency);
-        dependencies.add(new Dependency(parts[0], parts[1], parts[2]));
+        dependencies.add(new Dependency(parts[0], parts[1], parts[2], parts.length == 4 ? parts[3] : null));
     }
 
     public void dependency(@NotNull String groupId, @NotNull String artifactId, @NotNull String version) {
         dependencies.add(new Dependency(groupId, artifactId, version));
+    }
+
+    public void dependency(@NotNull String groupId, @NotNull String artifactId, @NotNull String version, @Nullable String classifier) {
+        dependencies.add(new Dependency(groupId, artifactId, version, classifier));
     }
 
     public void relocate(@NotNull Relocation relocation) {

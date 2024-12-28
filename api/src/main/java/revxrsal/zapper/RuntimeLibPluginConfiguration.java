@@ -80,7 +80,8 @@ public final class RuntimeLibPluginConfiguration {
             dependencies.add(new Dependency(
                     split[0],
                     split[1],
-                    split[2]
+                    split[2],
+                    split.length == 4 ? split[3] : null
             ));
         }
         return dependencies;
