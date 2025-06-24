@@ -154,7 +154,7 @@ public final class TransitiveResolver {
                     String groupId = dependencyBlock.getElementsByTagName("groupId").item(0).getTextContent();
                     String artifactId = dependencyBlock.getElementsByTagName("artifactId").item(0).getTextContent();
                     String version = "";
-                    MavenScope scope = null;
+                    MavenScope scope = MavenScope.COMPILE;
                     try {
                         version = dependencyBlock.getElementsByTagName("version").item(0).getTextContent();
                         scope = MavenScope.fromString(dependencyBlock.getElementsByTagName("scope").item(0).getTextContent());
