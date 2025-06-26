@@ -154,7 +154,7 @@ public final class TransitiveResolver {
                     String groupId = dependencyBlock.getElementsByTagName("groupId").item(0).getTextContent();
                     String artifactId = dependencyBlock.getElementsByTagName("artifactId").item(0).getTextContent();
                     String version = "";
-                    MavenScope scope = null;
+                    MavenScope scope = MavenScope.COMPILE;
                     try {
                         version = dependencyBlock.getElementsByTagName("version").item(0).getTextContent();
                         scope = MavenScope.fromString(dependencyBlock.getElementsByTagName("scope").item(0).getTextContent());
@@ -162,7 +162,7 @@ public final class TransitiveResolver {
                     }
                     if (groupId.equals("${project.groupId}")) groupId = dependency.getGroupId();
                     if (version.equals("${project.version}")) version = dependency.getVersion();
-                    if (scope != null && scopes.contains(scope) && !version.isEmpty()) {
+                    if (scopes.contains(scope) && !version.isEmpty()) {
                         Dependency e = new Dependency(groupId, artifactId, version);
                         dependencies.add(e);
                     }
