@@ -162,7 +162,7 @@ public final class TransitiveResolver {
                     }
                     if (groupId.equals("${project.groupId}")) groupId = dependency.getGroupId();
                     if (version.equals("${project.version}")) version = dependency.getVersion();
-                    if (scope != null && scopes.contains(scope) && !version.isEmpty()) {
+                    if (scopes.contains(scope) && !version.isEmpty()) {
                         Dependency e = new Dependency(groupId, artifactId, version);
                         dependencies.add(e);
                     }
