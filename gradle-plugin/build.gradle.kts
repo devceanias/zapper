@@ -16,7 +16,7 @@ dependencies {
 gradlePlugin {
     plugins {
         create("zapper") {
-            id = "io.github.revxrsal.zapper"
+            id = "net.oceanias.zapper"
             displayName = "Zapper"
             description = "A powerful and flexible Maven dependency downloader at runtime"
             implementationClass = "revxrsal.zapper.gradle.ZapperPlugin"

@@ -126,5 +126,5 @@ private fun Project.createRepositoriesFile(outputDir: File, extension: ZapperExt
  * Adds the Zapper API library
  */
 private fun Project.addZapperDependencies() {
-    dependencies.add("implementation", "io.github.revxrsal:zapper.api:${PLUGIN_VERSION}")
+    dependencies.add("implementation", "net.oceanias.zapper:zapper.api:${PLUGIN_VERSION}")
 }

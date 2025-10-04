@@ -12,21 +12,3 @@ plugins {
 
 include("api")
 include("gradle-plugin")
-include("internal-paper-stubs")
-
-/*
- * -------- Example projects --------
- */
-
-include("examples")
-
-val exampleProjects = listOf(
-    "bukkit-java",
-    "bukkit-kotlin",
-)
-
-exampleProjects.forEach { project ->
-    include("examples:$project")
-    findProject(":examples:$project")?.name = project
-}
-
