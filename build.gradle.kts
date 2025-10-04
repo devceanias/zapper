@@ -47,7 +47,7 @@ subprojects {
                 name.set("Zapper")
                 description.set("A powerful and flexible Maven dependency downloader at runtime")
                 inceptionYear.set("2024")
-                url.set("https://github.com/Revxrsal/Zapper/")
+                url.set("https://github.com/devceanias/zapper")
                 licenses {
                     license {
                         name.set("MIT")
@@ -63,14 +63,11 @@ subprojects {
                     }
                 }
                 scm {
-                    url.set("https://github.com/Revxrsal/Zapper/")
-                    connection.set("scm:git:git://github.com/Revxrsal/Zapper.git")
-                    developerConnection.set("scm:git:ssh://git@github.com/Revxrsal/Zapper.git")
+                    url.set("https://github.com/devceanias/zapper")
+                    connection.set("scm:git:git://github.com/devceanias/zapper.git")
+                    developerConnection.set("scm:git:ssh://git@github.com/devceanias/zapper.git")
                 }
             }
-
-            publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
-            signAllPublications()
         }
     }
 }
