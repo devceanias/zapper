@@ -21,7 +21,7 @@ private const val PLUGIN_VERSION: String = "1.0.3"
 class ZapperPlugin : Plugin<Project> {
 
     override fun apply(project: Project) {
-        if (!project.plugins.hasPlugin("com.github.johnrengelman.shadow")) {
+        if (!project.plugins.hasPlugin("com.gradleup.shadow")) {
             error("ShadowJar is required by the Zapper Gradle plugin. Please add ShadowJar v8.11.0")
         }
 
