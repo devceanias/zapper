@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly("com.github.johnrengelman.shadow:com.github.johnrengelman.shadow.gradle.plugin:8.1.1")
+    compileOnly("com.gradleup.shadow:com.gradleup.shadow.gradle.plugin:9.2.2")
 }
 
 gradlePlugin {
@@ -20,8 +20,8 @@ gradlePlugin {
             displayName = "Zapper"
             description = "A powerful and flexible Maven dependency downloader at runtime"
             implementationClass = "revxrsal.zapper.gradle.ZapperPlugin"
-            website = "https://github.com/Revxrsal/Zapper"
-            vcsUrl = "https://github.com/Revxrsal/Zapper"
+            website = "https://github.com/devceanias/zapper"
+            vcsUrl = "https://github.com/devceanias/zapper"
             tags = listOf("maven", "downloader", "runtime dependency")
         }
     }

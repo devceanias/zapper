@@ -81,7 +81,7 @@ class ZapperPlugin : Plugin<Project> {
  */
 private fun Project.createRelocationsFile(outputDir: File, extension: ZapperExtension) {
     val relocationsFile = outputDir.resolve("relocations.txt")
-    project.plugins.withId("com.github.johnrengelman.shadow") {
+    project.plugins.withId("com.gradleup.shadow") {
         val relocationRules = mutableListOf<String>()
         project.tasks.withType<ShadowJar>().configureEach {
             extension.relocations.forEach {
