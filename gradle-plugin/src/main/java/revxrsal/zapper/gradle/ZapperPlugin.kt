@@ -12,7 +12,7 @@ import java.io.File
 /**
  * The plugin version
  */
-private const val PLUGIN_VERSION: String = "1.0.3"
+private const val PLUGIN_VERSION: String = "1.0.7"
 
 /**
  * The Zapper Gradle plugin collects information about the zapped dependencies
