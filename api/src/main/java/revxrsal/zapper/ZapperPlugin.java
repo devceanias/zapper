@@ -22,9 +22,9 @@ public final class ZapperPlugin {
             libraries, URLClassLoaderWrapper.wrap((URLClassLoader) ZapperPlugin.class.getClassLoader())
         );
 
-        if (!libraries.exists()) {
-            final ComponentLogger logger = context.getLogger();
+        final ComponentLogger logger = context.getLogger();
 
+        if (!libraries.exists()) {
             // "ur plugin slow!!"
             logger.info(
                 "It appears you're running {} for the first time.", context.getPluginMeta().getDisplayName()
@@ -37,6 +37,6 @@ public final class ZapperPlugin {
         config.getRepositories().forEach(manager::repository);
         config.getRelocations().forEach(manager::relocate);
 
-        manager.load();
+        manager.load(logger);
     }
 }

@@ -27,8 +27,8 @@ import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 import revxrsal.zapper.classloader.URLClassLoaderWrapper;
-import revxrsal.zapper.meta.MetaReader;
 import revxrsal.zapper.relocation.Relocation;
 import revxrsal.zapper.relocation.Relocator;
 import revxrsal.zapper.repository.Repository;
@@ -53,7 +53,6 @@ public final class DependencyManager implements DependencyScope {
     private final List<Dependency> dependencies = new ArrayList<>();
     private final Set<Repository> repositories = new LinkedHashSet<>();
     private final List<Relocation> relocations = new ArrayList<>();
-    private final MetaReader metaReader = MetaReader.create();
 
     public DependencyManager(@NotNull File directory, @NotNull URLClassLoaderWrapper classLoader) {
         this.directory = directory;
@@ -62,7 +61,7 @@ public final class DependencyManager implements DependencyScope {
     }
 
     @SneakyThrows
-    public void load() {
+    public void load(final Logger logger) {
         try {
             List<Path> paths = new ArrayList<>();
             for (Dependency dep : dependencies) {
@@ -101,7 +100,8 @@ public final class DependencyManager implements DependencyScope {
                 classLoader.addURL(path.toUri().toURL());
         } catch (DependencyDownloadException e) {
             if (e.getCause() instanceof UnknownHostException) {
-                Bukkit.getLogger().info("[" + metaReader.pluginName() + "] It appears you do not have an internet connection. Please provide an internet connection for once at least.");
+                logger.info("It appears you do not have an internet connection. Please provide an internet connection for once at least.");
+
                 FAILED_TO_DOWNLOAD = true;
             } else throw e;
         }
