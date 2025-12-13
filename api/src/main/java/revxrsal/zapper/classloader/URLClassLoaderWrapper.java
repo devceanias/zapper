@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * A wrapper for {@link URLClassLoader} that allows adding URLs to it.
  */
 public abstract class URLClassLoaderWrapper {
-    private static final Map<Class<?>, Method> ADD_URL_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, Method> ADD_URL_METHOD_CACHE = new ConcurrentHashMap<>();
 
     public abstract void addURL(@NotNull URL var1);
 
@@ -44,7 +44,7 @@ public abstract class URLClassLoaderWrapper {
      */
     public static @NotNull URLClassLoaderWrapper wrapLoader(@NotNull final URLClassLoader loader) {
         try {
-            final Method addUrl = ADD_URL_CACHE.computeIfAbsent(loader.getClass(), clazz -> {
+            final Method addUrlMethod = ADD_URL_METHOD_CACHE.computeIfAbsent(loader.getClass(), clazz -> {
                 try {
                     final Method method = clazz.getDeclaredMethod("addURL", URL.class);
 
@@ -60,9 +60,9 @@ public abstract class URLClassLoaderWrapper {
                 @Override
                 public void addURL(@NotNull final URL url) {
                     try {
-                        addUrl.invoke(loader, url);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                        addUrlMethod.invoke(loader, url);
+                    } catch (final Exception exception) {
+                        throw new RuntimeException(exception);
                     }
                 }
             };
