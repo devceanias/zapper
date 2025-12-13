@@ -25,23 +25,63 @@ package revxrsal.zapper.classloader;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A wrapper for {@link URLClassLoader} that allows adding URLs to it.
  */
 public abstract class URLClassLoaderWrapper {
+    private static final Map<Class<?>, Method> ADD_URL_METHOD_CACHE = new ConcurrentHashMap<>();
 
-    /**
-     * Adds the given URL to it
-     */
     public abstract void addURL(@NotNull URL var1);
 
     /**
      * Returns a {@link URLClassLoaderWrapper} for the given class loader
      */
-    public static @NotNull URLClassLoaderWrapper wrap(@NotNull URLClassLoader classLoader) {
-        return new ByUnsafe(classLoader);
+    public static @NotNull URLClassLoaderWrapper wrapLoader(@NotNull final URLClassLoader loader) {
+        try {
+            final Method addUrlMethod = ADD_URL_METHOD_CACHE.computeIfAbsent(
+                loader.getClass(), URLClassLoaderWrapper::findAddUrlMethod
+            );
+
+            return new URLClassLoaderWrapper() {
+                @Override
+                public void addURL(@NotNull final URL url) {
+                    try {
+                        addUrlMethod.invoke(loader, url);
+                    } catch (final Exception exception) {
+                        throw new RuntimeException(exception);
+                    }
+                }
+            };
+        } catch (final Throwable throwable) {
+            throw new IllegalStateException("Error adding URL to classloader.", throwable);
+        }
+    }
+
+    private static @NotNull Method findAddUrlMethod(final Class<?> clazz) {
+        Class<?> current = clazz;
+
+        while (current != null) {
+            try {
+                final Method method = current.getDeclaredMethod("addURL", URL.class);
+
+                method.setAccessible(true);
+
+                return method;
+            } catch (final NoSuchMethodException ignored) {
+                current = current.getSuperclass();
+            }
+        }
+
+        final String name = clazz != null
+            ? clazz.getName()
+            : "null";
+
+        throw new IllegalStateException("Error finding addURL(URL) on classloader " + name + ".");
     }
 }

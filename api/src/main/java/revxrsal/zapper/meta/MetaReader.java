@@ -38,8 +38,8 @@ public interface MetaReader {
         String classLoaderName = MetaReader.class.getClassLoader().getClass().getSimpleName();
         if (classLoaderName.contains("Paper"))
             return Class.forName("revxrsal.zapper.meta.PaperMetaReader")
-                    .asSubclass(MetaReader.class)
-                    .newInstance();
+                .asSubclass(MetaReader.class)
+                .newInstance();
         return new BukkitMetaReader();
     }
 }
