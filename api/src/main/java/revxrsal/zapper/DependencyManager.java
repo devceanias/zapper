@@ -96,8 +96,9 @@ public final class DependencyManager implements DependencyScope {
                 else
                     paths.add(file.toPath());
             }
-            for (Path path : paths)
+            for (final Path path : paths) {
                 classLoader.addURL(path.toUri().toURL());
+            }
         } catch (DependencyDownloadException e) {
             if (e.getCause() instanceof UnknownHostException) {
                 logger.info("It appears you do not have an internet connection. Please provide an internet connection for once at least.");

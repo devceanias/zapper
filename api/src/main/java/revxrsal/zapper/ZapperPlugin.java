@@ -19,7 +19,7 @@ public final class ZapperPlugin {
         final File libraries = new File(context.getDataDirectory().toFile(), config.getLibsFolder());
 
         final DependencyManager manager = new DependencyManager(
-            libraries, URLClassLoaderWrapper.wrap((URLClassLoader) ZapperPlugin.class.getClassLoader())
+            libraries, URLClassLoaderWrapper.wrapLoader((URLClassLoader) context.getClass().getClassLoader())
         );
 
         final ComponentLogger logger = context.getLogger();
