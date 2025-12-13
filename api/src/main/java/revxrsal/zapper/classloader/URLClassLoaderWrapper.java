@@ -46,7 +46,7 @@ public abstract class URLClassLoaderWrapper {
         try {
             final Method addUrlMethod = ADD_URL_METHOD_CACHE.computeIfAbsent(loader.getClass(), clazz -> {
                 try {
-                    final Method method = clazz.getDeclaredMethod("addURL", URL.class);
+                    final Method method = clazz.getMethod("addURL", URL.class);
 
                     method.setAccessible(true);
 
