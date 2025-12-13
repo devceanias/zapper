@@ -133,7 +133,7 @@ public final class Dependency {
             if (sha1 != null) {
                 final String actual = convertToHex(sha1.digest());
 
-                if (!expected.endsWith(actual)) { // checksum files may include "SHA1 (file) = ..."
+                if (!expected.endsWith(actual)) { // Checksum files may include "SHA1 (file) = ...".
                     file.delete();
 
                     return DependencyDownloadResult.failure(new IllegalStateException(
