@@ -31,17 +31,19 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import revxrsal.zapper.Dependency;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Represents a Maven repository with a URL
  */
 final class MavenRepository implements Repository {
-
     private static final MavenRepository MAVEN_CENTRAL = new MavenRepository("https://repo1.maven.org/maven2/");
     private static final MavenRepository JITPACK = new MavenRepository("https://jitpack.io/");
     private static final MavenRepository MINECRAFT = new MavenRepository("https://libraries.minecraft.net/");
@@ -155,8 +157,29 @@ final class MavenRepository implements Repository {
             .getGroupId()
             .replace('.', '/') + "/" + dependency.getArtifactId() + "/" + dependency.getVersion() + "/";
 
-        try (final InputStream stream = URI.create(repoURL + base + "maven-metadata.xml").toURL().openStream()) {
-            final Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(stream);
+        final URL url = URI.create(repoURL + base + "maven-metadata.xml").toURL();
+        final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+        connection.setConnectTimeout((int) TimeUnit.SECONDS.toMillis(5));
+        connection.setReadTimeout((int) TimeUnit.SECONDS.toMillis(10));
+        connection.setInstanceFollowRedirects(true);
+
+        final int code = connection.getResponseCode();
+
+        if (code >= 400) {
+            throw new IllegalStateException("Error fetching snapshot metadata (" + code + "): " + url + ".");
+        }
+
+        final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        factory.setNamespaceAware(false);
+
+        try (final InputStream stream = connection.getInputStream()) {
+            final Document document = factory.newDocumentBuilder().parse(stream);
 
             document.getDocumentElement().normalize();
 
@@ -206,6 +229,7 @@ final class MavenRepository implements Repository {
                 String extension = null;
                 String value = null;
                 String classifier = null;
+                int build = 0;
 
                 for (int childrenIndex = 0; childrenIndex < children.getLength(); childrenIndex++) {
                     final Node child = children.item(childrenIndex);
@@ -232,8 +256,19 @@ final class MavenRepository implements Repository {
                     value = content;
                 }
 
+                // If value is timestamped, parse the trailing build (e.g., ...-123).
+                if (value != null) {
+                    final int index = value.lastIndexOf('-');
+
+                    if (index != -1 && index < value.length() - 1) {
+                        try {
+                            build = Integer.parseInt(value.substring(index + 1));
+                        } catch (final NumberFormatException ignored) {}
+                    }
+                }
+
                 if (extension != null && value != null) {
-                    parsedVersions.add(new SnapshotVersion(classifier, extension, value));
+                    parsedVersions.add(new SnapshotVersion(classifier, extension, value, build));
                 }
             }
 
@@ -241,10 +276,10 @@ final class MavenRepository implements Repository {
         }
 
         private Optional<String> findSnapshotVersion(final String classifier, final String extension) {
-            // Pick the newest snapshot version (highest timestamp / build) if multiple exist.
+            // Pick the newest snapshot version (highest build/timestamp) if multiple exist.
             return versions.stream()
                 .filter(version -> version.matches(classifier, extension))
-                .max(SnapshotVersion::compareTo)
+                .max(Comparator.comparingInt(SnapshotVersion::build).thenComparing(SnapshotVersion::value))
                 .map(version -> version.value);
         }
 
@@ -259,7 +294,7 @@ final class MavenRepository implements Repository {
     }
 
     private record SnapshotVersion(
-        String classifier, String extension, String value
+        String classifier, String extension, String value, int build
     ) implements Comparable<SnapshotVersion> {
         private boolean matches(final String otherClassifier, final String otherExtension) {
             return Objects.equals(classifier, otherClassifier) && Objects.equals(extension, otherExtension);
@@ -267,6 +302,12 @@ final class MavenRepository implements Repository {
 
         @Override
         public int compareTo(@NotNull final SnapshotVersion version) {
+            final int comparison = Integer.compare(build, version.build);
+
+            if (comparison != 0) {
+                return comparison;
+            }
+
             return Comparator.nullsLast(String::compareTo).compare(value, version.value);
         }
     }
