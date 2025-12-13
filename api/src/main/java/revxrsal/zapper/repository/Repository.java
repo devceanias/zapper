@@ -20,7 +20,7 @@ public interface Repository {
      * @throws Exception any exception that indicates that this repository could not
      *                   resolve the dependency
      */
-    @NotNull URL resolve(@NotNull Dependency dependency) throws Exception;
+    @NotNull URL resolveJar(@NotNull Dependency dependency) throws Exception;
 
     /**
      * Resolves the pom URL of dependency that is downloaded.
@@ -31,6 +31,16 @@ public interface Repository {
      *                   resolve the dependency
      */
     @NotNull URL resolvePom(@NotNull Dependency dependency) throws Exception;
+
+    /**
+     * Resolves the checksum URL (SHA-1) for the dependency artifact.
+     *
+     * @param dependency Dependency to resolve
+     * @return The URL to resolve
+     * @throws Exception any exception that indicates that this repository could not
+     *                   resolve the dependency checksum
+     */
+    @NotNull URL resolveChecksum(@NotNull Dependency dependency) throws Exception;
 
     /**
      * Creates a Maven repository from the specified URL.

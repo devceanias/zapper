@@ -23,6 +23,7 @@
  */
 package revxrsal.zapper;
 
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.NotNull;
@@ -33,28 +34,35 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.security.MessageDigest;
 import java.util.Objects;
 
 /**
  * Represents a runtime dependency. Note that this does not include transitive
  * dependencies
  */
+@SuppressWarnings("ResultOfMethodCallIgnored")
 public final class Dependency {
 
     private static final String MAVEN_PATH = "%s/%s/%s/%s-%s%s";
 
+    @Getter
     private final String groupId;
+    @Getter
     private final String artifactId;
+    @Getter
     private final String version;
     private final String classifier;
+    @Getter
     private final String mavenPath;
 
-    public Dependency(@NotNull String groupId, @NotNull String artifactId, @NotNull String version) {
+    public Dependency(@NotNull final String groupId, @NotNull final String artifactId, @NotNull final String version) {
         this(groupId, artifactId, version, null);
     }
 
-    public Dependency(@NotNull String groupId, @NotNull String artifactId, @NotNull String version, @Nullable String classifier) {
+    public Dependency(@NotNull final String groupId, @NotNull final String artifactId, @NotNull final String version, @Nullable final String classifier) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
@@ -70,10 +78,13 @@ public final class Dependency {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
-        if (!(o instanceof Dependency)) return false;
-        Dependency that = (Dependency) o;
+
+        if (!(o instanceof final Dependency that)) {
+            return false;
+        }
+
         return Objects.equals(groupId, that.groupId) &&
                 Objects.equals(artifactId, that.artifactId) &&
                 Objects.equals(version, that.version) &&
@@ -86,47 +97,75 @@ public final class Dependency {
     }
 
     @CheckReturnValue
-    public @NotNull DependencyDownloadResult download(@NotNull File file, @NotNull Repository repository) {
+    public @NotNull DependencyDownloadResult download(@NotNull final File file, @NotNull final Repository repository) {
         try {
             if (!file.exists()) {
                 file.getParentFile().mkdirs();
                 file.createNewFile();
             }
-            URL url = repository.resolve(this);
-            try (InputStream depIn = url.openStream()) {
-                try (OutputStream outStream = Files.newOutputStream(file.toPath())) {
-                    byte[] buffer = new byte[8 * 1024];
+
+            final URL url = repository.resolveJar(this);
+
+            String expected = null;
+
+            try (final InputStream stream = repository.resolveChecksum(this).openStream()) {
+                expected = new String(stream.readAllBytes(), StandardCharsets.UTF_8).trim();
+            } catch (final Throwable ignored) {
+                // If checksum is unavailable, proceed without verification.
+            }
+
+            final MessageDigest sha1 = expected == null ? null : MessageDigest.getInstance("SHA-1");
+
+            try (final InputStream depIn = url.openStream()) {
+                try (final OutputStream outStream = Files.newOutputStream(file.toPath())) {
+                    final byte[] buffer = new byte[8 * 1024];
                     int bytesRead;
                     while ((bytesRead = depIn.read(buffer)) != -1) {
                         outStream.write(buffer, 0, bytesRead);
+
+                        if (sha1 != null) {
+                            sha1.update(buffer, 0, bytesRead);
+                        }
                     }
                 }
             }
+
+            if (sha1 != null) {
+                final String actual = convertToHex(sha1.digest());
+
+                if (!expected.endsWith(actual)) { // checksum files may include "SHA1 (file) = ..."
+                    file.delete();
+
+                    return DependencyDownloadResult.failure(new IllegalStateException(
+                        "Error downloading dependency; checksum mismatch for " +
+                        this +
+                        ": expected " +
+                        expected +
+                        " but found " +
+                        actual
+                    ));
+                }
+            }
+
             return DependencyDownloadResult.success();
-        } catch (Throwable t) {
+        } catch (final Throwable t) {
             file.delete();
             return DependencyDownloadResult.failure(t);
         }
-    }
-
-    public String getGroupId() {
-        return this.groupId;
-    }
-
-    public String getArtifactId() {
-        return this.artifactId;
-    }
-
-    public String getVersion() {
-        return this.version;
     }
 
     public @Nullable String getClassifier() {
         return this.classifier;
     }
 
-    public String getMavenPath() {
-        return this.mavenPath;
+    private static @NotNull String convertToHex(final byte @NotNull [] bytes) {
+        final StringBuilder builder = new StringBuilder(bytes.length * 2);
+
+        for (final byte value : bytes) {
+            builder.append(String.format("%02x", value));
+        }
+
+        return builder.toString();
     }
 
     @Override

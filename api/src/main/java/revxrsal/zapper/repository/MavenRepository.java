@@ -86,7 +86,7 @@ final class MavenRepository implements Repository {
         return getRepositoryURL();
     }
 
-    public @NotNull URL resolve(@NotNull final Dependency dependency) throws Exception {
+    public @NotNull URL resolveJar(@NotNull final Dependency dependency) throws Exception {
         if (dependency.getVersion().endsWith("SNAPSHOT")) {
             return resolveSnapshotDependency(dependency, "jar");
         }
@@ -101,6 +101,15 @@ final class MavenRepository implements Repository {
         }
 
         return URI.create(repoURL + dependency.getMavenPath() + ".pom").toURL();
+    }
+
+    @Override
+    public @NotNull URL resolveChecksum(@NotNull final Dependency dependency) throws Exception {
+        if (dependency.getVersion().endsWith("SNAPSHOT")) {
+            return URI.create(resolveSnapshotDependency(dependency, "jar") + ".sha1").toURL();
+        }
+
+        return URI.create(repoURL + dependency.getMavenPath() + ".jar.sha1").toURL();
     }
 
     @Override
