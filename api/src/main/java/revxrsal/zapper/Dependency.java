@@ -47,6 +47,7 @@ public final class Dependency {
     private final String groupId;
     private final String artifactId;
     private final String version;
+    private final String classifier;
     private final String mavenPath;
 
     public Dependency(@NotNull String groupId, @NotNull String artifactId, @NotNull String version) {
@@ -57,13 +58,14 @@ public final class Dependency {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
+        this.classifier = StringUtils.isBlank(classifier) ? null : classifier;
         mavenPath = String.format(MAVEN_PATH,
                 this.groupId.replace('.', '/'),
                 this.artifactId,
                 this.version,
                 this.artifactId,
                 this.version,
-                classifier == null || StringUtils.isBlank(classifier) ? "" : '-' + classifier
+                this.classifier == null ? "" : '-' + this.classifier
         );
     }
 
@@ -74,12 +76,13 @@ public final class Dependency {
         Dependency that = (Dependency) o;
         return Objects.equals(groupId, that.groupId) &&
                 Objects.equals(artifactId, that.artifactId) &&
-                Objects.equals(version, that.version);
+                Objects.equals(version, that.version) &&
+                Objects.equals(classifier, that.classifier);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(groupId, artifactId, version);
+        return Objects.hash(groupId, artifactId, version, classifier);
     }
 
     @CheckReturnValue
@@ -116,6 +119,10 @@ public final class Dependency {
 
     public String getVersion() {
         return this.version;
+    }
+
+    public @Nullable String getClassifier() {
+        return this.classifier;
     }
 
     public String getMavenPath() {

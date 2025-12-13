@@ -23,11 +23,19 @@
  */
 package revxrsal.zapper.repository;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import revxrsal.zapper.Dependency;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Represents a Maven repository with a URL
@@ -55,7 +63,7 @@ final class MavenRepository implements Repository {
         return PAPER;
     }
 
-    public static @NotNull MavenRepository maven(@NotNull String url) {
+    public static @NotNull MavenRepository maven(@NotNull final String url) {
         return new MavenRepository(url);
     }
 
@@ -76,24 +84,190 @@ final class MavenRepository implements Repository {
         return getRepositoryURL();
     }
 
-    public @NotNull URL resolve(@NotNull Dependency dependency) throws Exception {
-        return new URL(repoURL + dependency.getMavenPath() + ".jar");
+    public @NotNull URL resolve(@NotNull final Dependency dependency) throws Exception {
+        if (dependency.getVersion().endsWith("SNAPSHOT")) {
+            return resolveSnapshotDependency(dependency, "jar");
+        }
+
+        return URI.create(repoURL + dependency.getMavenPath() + ".jar").toURL();
     }
 
     @Override
-    public @NotNull URL resolvePom(@NotNull Dependency dependency) throws Exception {
-        return new URL(repoURL + dependency.getMavenPath() + ".pom");
+    public @NotNull URL resolvePom(@NotNull final Dependency dependency) throws Exception {
+        if (dependency.getVersion().endsWith("SNAPSHOT")) {
+            return resolveSnapshotDependency(dependency, "pom");
+        }
+
+        return URI.create(repoURL + dependency.getMavenPath() + ".pom").toURL();
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-        MavenRepository that = (MavenRepository) o;
+    public boolean equals(final Object object) {
+        if (object == null || getClass() != object.getClass()) {
+            return false;
+        }
+
+        final MavenRepository that = (MavenRepository) object;
+
         return Objects.equals(repoURL, that.repoURL);
     }
 
     @Override
     public int hashCode() {
         return Objects.hashCode(repoURL);
+    }
+
+    /**
+     * Resolves unique snapshot artifacts by reading maven-metadata.xml for the dependency.
+     */
+    private @NotNull URL resolveSnapshotDependency(
+        @NotNull final Dependency dependency, @NotNull final String extension
+    ) throws Exception {
+        final SnapshotMetadata metadata = loadSnapshotMetadata(dependency);
+
+        final String classifier = dependency.getClassifier();
+
+        final String version = metadata
+            .findSnapshotVersion(classifier, extension)
+            .orElseGet(() -> metadata.getTimestampedVersion(dependency.getVersion()));
+
+        if (version == null) {
+            throw new IllegalStateException("Error finding snapshot version for dependency " + dependency + ".");
+        }
+
+        final String artifact = dependency.getArtifactId();
+
+        final String finalClassifier = classifier == null
+            ? ""
+            : "-" + classifier;
+
+        final String base = dependency
+            .getGroupId()
+            .replace('.', '/') + "/" + artifact + "/" + dependency.getVersion() + "/";
+
+        final String fileName = artifact + "-" + version + finalClassifier + "." + extension;
+
+        return URI.create(repoURL + base + fileName).toURL();
+    }
+
+    private @NotNull SnapshotMetadata loadSnapshotMetadata(@NotNull final Dependency dependency) throws Exception {
+        final String base = dependency
+            .getGroupId()
+            .replace('.', '/') + "/" + dependency.getArtifactId() + "/" + dependency.getVersion() + "/";
+
+        try (final InputStream stream = URI.create(repoURL + base + "maven-metadata.xml").toURL().openStream()) {
+            final Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(stream);
+
+            document.getDocumentElement().normalize();
+
+            return SnapshotMetadata.parse(document);
+        }
+    }
+
+    private record SnapshotMetadata(String timestamp, String build, List<SnapshotVersion> versions) {
+        @Contract("_ -> new")
+        private static @NotNull SnapshotMetadata parse(final @NotNull Document document) {
+            final NodeList snapshotNodes = document.getElementsByTagName("snapshot");
+
+            String parsedTimestamp = null;
+            String parsedBuild = null;
+
+            final List<SnapshotVersion> parsedVersions = new ArrayList<>();
+            final NodeList versionNodes = document.getElementsByTagName("snapshotVersion");
+
+            if (snapshotNodes.getLength() > 0) {
+                final NodeList children = snapshotNodes.item(0).getChildNodes();
+
+                for (int index = 0; index < children.getLength(); index++) {
+                    final Node child = children.item(index);
+
+                    if (child.getNodeType() != Node.ELEMENT_NODE) {
+                        continue;
+                    }
+
+                    final String name = child.getNodeName();
+                    final String content = child.getTextContent();
+
+                    if (name.equals("timestamp")) {
+                        parsedTimestamp = content;
+                    }
+
+                    if (!name.equals("buildNumber")) {
+                        continue;
+                    }
+
+                    parsedBuild = content;
+                }
+            }
+
+            for (int versionIndex = 0; versionIndex < versionNodes.getLength(); versionIndex++) {
+                final NodeList children = versionNodes.item(versionIndex).getChildNodes();
+
+                String extension = null;
+                String value = null;
+                String classifier = null;
+
+                for (int childrenIndex = 0; childrenIndex < children.getLength(); childrenIndex++) {
+                    final Node child = children.item(childrenIndex);
+
+                    if (child.getNodeType() != Node.ELEMENT_NODE) {
+                        continue;
+                    }
+
+                    final String name = child.getNodeName();
+                    final String content = child.getTextContent();
+
+                    if (name.equals("classifier")) {
+                        classifier = content;
+                    }
+
+                    if (name.equals("extension")) {
+                        extension = content;
+                    }
+
+                    if (!name.equals("value")) {
+                        continue;
+                    }
+
+                    value = content;
+                }
+
+                if (extension != null && value != null) {
+                    parsedVersions.add(new SnapshotVersion(classifier, extension, value));
+                }
+            }
+
+            return new SnapshotMetadata(parsedTimestamp, parsedBuild, parsedVersions);
+        }
+
+        private Optional<String> findSnapshotVersion(final String classifier, final String extension) {
+            // Pick the newest snapshot version (highest timestamp / build) if multiple exist.
+            return versions.stream()
+                .filter(version -> version.matches(classifier, extension))
+                .max(SnapshotVersion::compareTo)
+                .map(version -> version.value);
+        }
+
+        @Contract(pure = true)
+        private @Nullable String getTimestampedVersion(final String version) {
+            if (timestamp == null || build == null) {
+                return null;
+            }
+
+            return version.replace("SNAPSHOT", timestamp + "-" + build);
+        }
+    }
+
+    private record SnapshotVersion(
+        String classifier, String extension, String value
+    ) implements Comparable<SnapshotVersion> {
+        private boolean matches(final String otherClassifier, final String otherExtension) {
+            return Objects.equals(classifier, otherClassifier) && Objects.equals(extension, otherExtension);
+        }
+
+        @Override
+        public int compareTo(@NotNull final SnapshotVersion version) {
+            return Comparator.nullsLast(String::compareTo).compare(value, version.value);
+        }
     }
 }
