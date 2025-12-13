@@ -3,4 +3,4 @@ plugins {
 }
 
 group = "net.oceanias.zapper"
-version = "1.0.9"
+version = "1.0.10"

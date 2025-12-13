@@ -14,7 +14,7 @@ import org.gradle.kotlin.dsl.maven
 /**
  * The plugin version
  */
-private const val PLUGIN_VERSION: String = "1.0.9"
+private const val PLUGIN_VERSION: String = "1.0.10"
 
 /**
  * The Zapper Gradle plugin collects information about the zapped dependencies
@@ -88,7 +88,7 @@ private fun Project.addZapperDependencies() {
     repositories.maven("jitpack.io")
 
     dependencies.add(
-        "implementation", "com.github.devceanias:zapper.api:${PLUGIN_VERSION}"
+        "implementation", "com.github.devceanias:zapper:${PLUGIN_VERSION}"
     )
 }
 
