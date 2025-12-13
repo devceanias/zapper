@@ -14,7 +14,7 @@ import org.gradle.kotlin.dsl.maven
 /**
  * The plugin version
  */
-private const val PLUGIN_VERSION: String = "1.2.0"
+private const val PLUGIN_VERSION: String = "1.3.0"
 
 /**
  * The Zapper Gradle plugin collects information about the zapped dependencies
@@ -61,8 +61,7 @@ class ZapperPlugin : Plugin<Project> {
                     .resolve("dependencies.txt")
                     .writeLines(project.collectAllDependencies(zap))
 
-                val mergedProps = project.resolveZapperProperties(extension)
-                outputDir.resolve("zapper.properties").writeText(mergedProps)
+                outputDir.resolve("zapper.properties").writeText(extension.toPropertiesFile())
             }
         }
 
@@ -170,42 +169,6 @@ private fun Project.collectZapperResource(fileName: String): List<String> {
     }
 
     return collected.toList()
-}
-
-private fun Project.resolveZapperProperties(extension: ZapperExtension): String {
-    // If user set custom values, prefer them; otherwise fall back to first found in dependencies.
-    var libsFolder = extension.libsFolder
-    var relocationPrefix = extension.relocationPrefix
-
-    if (libsFolder == "libs" || relocationPrefix == "zapperlib") {
-        listOfNotNull(
-            configurations.findByName("compileClasspath"),
-            configurations.findByName("runtimeClasspath")
-        ).forEach { configuration ->
-            configuration.resolvedConfiguration.resolvedArtifacts.forEach { artifact ->
-                val file = artifact.file
-                if (!file.isFile || file.extension != "jar") return@forEach
-                JarFile(file).use { jar ->
-                    val entry = jar.getJarEntry("zapper/zapper.properties") ?: return@use
-                    jar.getInputStream(entry).use { input ->
-                        val props = java.util.Properties()
-                        props.load(input)
-                        if (libsFolder == "libs") {
-                            props.getProperty("libs-folder")?.let { libsFolder = it }
-                        }
-                        if (relocationPrefix == "zapperlib") {
-                            props.getProperty("relocation-prefix")?.let { relocationPrefix = it }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    return """
-        libs-folder=$libsFolder
-        relocation-prefix=$relocationPrefix
-    """.trimIndent()
 }
 
 private fun File.writeLines(lines: List<String>) {
