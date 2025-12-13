@@ -44,17 +44,9 @@ public abstract class URLClassLoaderWrapper {
      */
     public static @NotNull URLClassLoaderWrapper wrapLoader(@NotNull final URLClassLoader loader) {
         try {
-            final Method addUrlMethod = ADD_URL_METHOD_CACHE.computeIfAbsent(loader.getClass(), clazz -> {
-                try {
-                    final Method method = clazz.getMethod("addURL", URL.class);
-
-                    method.setAccessible(true);
-
-                    return method;
-                } catch (final Exception exception) {
-                    throw new RuntimeException(exception);
-                }
-            });
+            final Method addUrlMethod = ADD_URL_METHOD_CACHE.computeIfAbsent(
+                loader.getClass(), URLClassLoaderWrapper::findAddUrlMethod
+            );
 
             return new URLClassLoaderWrapper() {
                 @Override
@@ -69,5 +61,27 @@ public abstract class URLClassLoaderWrapper {
         } catch (final Throwable throwable) {
             throw new IllegalStateException("Error adding URL to classloader.", throwable);
         }
+    }
+
+    private static @NotNull Method findAddUrlMethod(final Class<?> clazz) {
+        Class<?> current = clazz;
+
+        while (current != null) {
+            try {
+                final Method method = current.getDeclaredMethod("addURL", URL.class);
+
+                method.setAccessible(true);
+
+                return method;
+            } catch (final NoSuchMethodException ignored) {
+                current = current.getSuperclass();
+            }
+        }
+
+        final String name = clazz != null
+            ? clazz.getName()
+            : "null";
+
+        throw new IllegalStateException("Error finding addURL(URL) on classloader " + name + ".");
     }
 }

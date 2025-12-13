@@ -14,7 +14,7 @@ import org.gradle.kotlin.dsl.maven
 /**
  * The plugin version
  */
-private const val PLUGIN_VERSION: String = "1.3.3"
+private const val PLUGIN_VERSION: String = "1.3.4"
 
 /**
  * The Zapper Gradle plugin collects information about the zapped dependencies
