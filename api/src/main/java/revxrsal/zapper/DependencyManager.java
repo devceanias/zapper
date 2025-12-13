@@ -24,11 +24,10 @@
 package revxrsal.zapper;
 
 import lombok.SneakyThrows;
-import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
 import revxrsal.zapper.classloader.URLClassLoaderWrapper;
+import revxrsal.zapper.meta.MetaReader;
 import revxrsal.zapper.relocation.Relocation;
 import revxrsal.zapper.relocation.Relocator;
 import revxrsal.zapper.repository.Repository;
@@ -41,6 +40,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.bukkit.Bukkit;
 
 public final class DependencyManager implements DependencyScope {
 
@@ -53,6 +53,7 @@ public final class DependencyManager implements DependencyScope {
     private final List<Dependency> dependencies = new ArrayList<>();
     private final Set<Repository> repositories = new LinkedHashSet<>();
     private final List<Relocation> relocations = new ArrayList<>();
+    private final MetaReader meta = MetaReader.create();
 
     public DependencyManager(@NotNull File directory, @NotNull URLClassLoaderWrapper classLoader) {
         this.directory = directory;
@@ -61,7 +62,7 @@ public final class DependencyManager implements DependencyScope {
     }
 
     @SneakyThrows
-    public void load(final Logger logger) {
+    public void load() {
         try {
             List<Path> paths = new ArrayList<>();
             for (Dependency dep : dependencies) {
@@ -101,7 +102,9 @@ public final class DependencyManager implements DependencyScope {
             }
         } catch (DependencyDownloadException e) {
             if (e.getCause() instanceof UnknownHostException) {
-                logger.info("It appears you do not have an internet connection. Please provide an internet connection for once at least.");
+                Bukkit.getLogger().info(
+                    "[" + meta.pluginName() + "] It appears you do not have an internet connection. Please provide an internet connection for once at least."
+                );
 
                 FAILED_TO_DOWNLOAD = true;
             } else throw e;
