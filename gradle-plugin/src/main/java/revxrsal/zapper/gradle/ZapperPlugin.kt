@@ -8,6 +8,8 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.withType
 import java.io.File
+import java.util.jar.JarFile
+import org.gradle.kotlin.dsl.maven
 
 /**
  * The plugin version
@@ -19,7 +21,6 @@ private const val PLUGIN_VERSION: String = "1.0.7"
  * and merges them into raw text files that are read by the Zapper API.
  */
 class ZapperPlugin : Plugin<Project> {
-
     override fun apply(project: Project) {
         if (!project.plugins.hasPlugin("com.gradleup.shadow")) {
             error("ShadowJar is required by the Zapper Gradle plugin. Please add ShadowJar v8.11.0")
@@ -47,16 +48,20 @@ class ZapperPlugin : Plugin<Project> {
                 outputDir.mkdirs()
 
                 val extension = project.zapper
-                project.createRepositoriesFile(outputDir, extension)
 
-                if (extension.relocations.isNotEmpty()) {
-                    project.createRelocationsFile(outputDir, extension)
-                }
+                outputDir
+                    .resolve("repositories.txt")
+                    .writeLines(project.collectAllRepositories(extension))
 
-                createZappersFile(outputDir, zap)
+                outputDir
+                    .resolve("relocations.txt")
+                    .writeLines(project.collectAllRelocations(extension))
 
-                val configFile = outputDir.resolve("zapper.properties")
-                configFile.writeText(extension.toPropertiesFile())
+                outputDir
+                    .resolve("dependencies.txt")
+                    .writeLines(project.collectAllDependencies(zap))
+
+                outputDir.resolve("zapper.properties").writeText(extension.toPropertiesFile())
             }
         }
 
@@ -77,54 +82,95 @@ class ZapperPlugin : Plugin<Project> {
 }
 
 /**
- * Generates the relocations.txt file
- */
-private fun Project.createRelocationsFile(outputDir: File, extension: ZapperExtension) {
-    val relocationsFile = outputDir.resolve("relocations.txt")
-    project.plugins.withId("com.gradleup.shadow") {
-        val relocationRules = mutableListOf<String>()
-        project.tasks.withType<ShadowJar>().configureEach {
-            extension.relocations.forEach {
-                relocationRules.add("${it.pattern}:${extension.relocationPrefix}.${it.newPattern}")
-                relocate(it.pattern, "${extension.relocationPrefix}.${it.newPattern}")
-            }
-            relocate("revxrsal.zapper", "${extension.relocationPrefix}.zapper")
-        }
-        relocationsFile.writeText(relocationRules.joinToString("\n"))
-    }
-}
-
-/**
- * Generates the dependencies.txt file
- */
-private fun createZappersFile(outputDir: File, runtimeLib: Configuration) {
-    val runtimeLibsFile = outputDir.resolve("dependencies.txt")
-    val runtimeLibDependencies = runtimeLib.resolvedConfiguration
-        .resolvedArtifacts
-        .joinToString("\n") { it.moduleVersion.id.toString() }
-
-    runtimeLibsFile.writeText(runtimeLibDependencies)
-}
-
-/**
- * Generates the repositories.txt file
- */
-private fun Project.createRepositoriesFile(outputDir: File, extension: ZapperExtension) {
-    val repositoriesFile = outputDir.resolve("repositories.txt")
-    val repositories = extension.repositries.toMutableSet()
-    if (extension.includeProjectRepositories) {
-        project.repositories.forEach {
-            if (it is MavenArtifactRepository) {
-                repositories.add(it.url.toString())
-            }
-        }
-    }
-    repositoriesFile.writeText(repositories.joinToString("\n"))
-}
-
-/**
  * Adds the Zapper API library
  */
 private fun Project.addZapperDependencies() {
-    dependencies.add("implementation", "net.oceanias.zapper:zapper.api:${PLUGIN_VERSION}")
+    repositories.maven("jitpack.io")
+
+    dependencies.add(
+        "implementation", "com.github.devceanias:zapper.api:${PLUGIN_VERSION}"
+    )
+}
+
+private fun Project.collectAllDependencies(runtimeLib: Configuration): List<String> {
+    val dependencies = LinkedHashSet<String>()
+
+    dependencies.addAll(
+        runtimeLib.resolvedConfiguration.resolvedArtifacts.map { artifact -> artifact.moduleVersion.id.toString() }
+    )
+
+    dependencies.addAll(collectZapperResource("dependencies.txt"))
+
+    return dependencies.toList()
+}
+
+private fun Project.collectAllRelocations(extension: ZapperExtension): List<String> {
+    val relocations = LinkedHashSet<String>()
+
+    plugins.withId("com.gradleup.shadow") {
+        tasks.withType<ShadowJar>().configureEach {
+            extension.relocations.forEach {
+                relocations.add("${it.pattern}:${extension.relocationPrefix}.${it.newPattern}")
+
+                relocate(it.pattern, "${extension.relocationPrefix}.${it.newPattern}")
+            }
+
+            relocate("revxrsal.zapper", "${extension.relocationPrefix}.zapper")
+        }
+    }
+
+    relocations.addAll(collectZapperResource("relocations.txt"))
+
+    return relocations.toList()
+}
+
+private fun Project.collectAllRepositories(extension: ZapperExtension): List<String> {
+    val repositories = LinkedHashSet<String>()
+
+    repositories.addAll(extension.repositories)
+
+    if (extension.includeProjectRepositories) {
+        project.repositories.forEach { repository ->
+            if (repository is MavenArtifactRepository) {
+                repositories.add(repository.url.toString())
+            }
+        }
+    }
+
+    repositories.addAll(collectZapperResource("repositories.txt"))
+
+    return repositories.toList()
+}
+
+private fun Project.collectZapperResource(fileName: String): List<String> {
+    val configurations = listOfNotNull(
+        configurations.findByName("compileClasspath"),
+        configurations.findByName("runtimeClasspath")
+    )
+
+    val collected = LinkedHashSet<String>()
+
+    configurations.forEach { configuration ->
+        configuration.resolvedConfiguration.resolvedArtifacts.forEach { artifact ->
+            val file = artifact.file
+
+            if (!file.isFile || file.extension != "jar") {
+                return@forEach
+            }
+
+            JarFile(file).use { jar ->
+                val entry = jar.getJarEntry("zapper/$fileName") ?: return@use
+
+                jar.getInputStream(entry).bufferedReader().useLines { lines ->
+                    lines.filter { line -> line.isNotBlank() }.forEach { line -> collected.add(line) }
+                }
+            }
+        }
+    }
+
+    return collected.toList()
+}
+
+private fun File.writeLines(lines: List<String>) {
+    writeText(lines.joinToString("\n"))
 }

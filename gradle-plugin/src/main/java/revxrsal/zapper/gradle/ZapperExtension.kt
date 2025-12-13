@@ -36,7 +36,7 @@ open class ZapperExtension {
     /**
      * The currently added repositories
      */
-    val repositries: List<String> get() = _repositories
+    val repositories: List<String> get() = _repositories
 
     /**
      * The current relocation rules
@@ -72,7 +72,7 @@ open class ZapperExtension {
      * A fancy toString implementation
      */
     override fun toString(): String {
-        return "RuntimeLibsExtension(libsFolder='$libsFolder', includeProjectRepositories=$includeProjectRepositories, repositries=$repositries)"
+        return "RuntimeLibsExtension(libsFolder='$libsFolder', includeProjectRepositories=$includeProjectRepositories, repositries=$repositories)"
     }
 
     /**
