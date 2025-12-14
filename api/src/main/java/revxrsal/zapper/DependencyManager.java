@@ -164,10 +164,12 @@ public final class DependencyManager implements DependencyScope {
 
                 if (!addToPaperLibraryLoader(url, logger, prefix)) {
                     classLoader.addURL(url);
-
                     logger.info(prefix + "Added to plugin classloader: " + path.getFileName() + ".");
                 }
             }
+
+            // Default TCCL to the plugin classloader so libraries relying on it can see classes correctly.
+            Thread.currentThread().setContextClassLoader(ZapperPlugin.class.getClassLoader());
         } catch (final DependencyDownloadException exception) {
             if (exception.getCause() instanceof UnknownHostException) {
                 logger.info(
