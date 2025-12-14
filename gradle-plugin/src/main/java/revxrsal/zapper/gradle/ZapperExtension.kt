@@ -47,7 +47,7 @@ open class ZapperExtension {
      * Should project repositories be remembered for downloading
      * repositories at runtime?
      */
-    internal var includeProjectRepositories = false
+    internal var includeProjectRepositories = true
 
     /**
      * Configures the repositories that are used for downloading dependencies.
