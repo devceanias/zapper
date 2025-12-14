@@ -12,11 +12,6 @@ import java.util.jar.JarFile
 import org.gradle.kotlin.dsl.maven
 
 /**
- * The plugin version
- */
-private const val PLUGIN_VERSION: String = "1.3.5"
-
-/**
  * The Zapper Gradle plugin collects information about the zapped dependencies
  * and merges them into raw text files that are read by the Zapper API.
  */
@@ -65,8 +60,6 @@ class ZapperPlugin : Plugin<Project> {
             }
         }
 
-        project.addZapperDependencies()
-
         project.tasks.withType(Jar::class.java).configureEach {
             dependsOn("generateZapperFiles")
 
@@ -79,17 +72,6 @@ class ZapperPlugin : Plugin<Project> {
             }
         }
     }
-}
-
-/**
- * Adds the Zapper API library
- */
-private fun Project.addZapperDependencies() {
-    repositories.maven("jitpack.io")
-
-    dependencies.add(
-        "implementation", "com.github.devceanias:zapper:${PLUGIN_VERSION}"
-    )
 }
 
 private fun Project.collectAllDependencies(runtimeLib: Configuration): List<String> {

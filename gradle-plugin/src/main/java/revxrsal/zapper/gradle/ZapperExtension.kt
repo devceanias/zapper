@@ -16,17 +16,17 @@ open class ZapperExtension {
      * The subfolder in the plugin directory where libraries
      * should be installed
      */
-    var libsFolder: String = "libs"
+    var libsFolder: String = "libraries"
 
     /**
      * The relocation prefix of all libraries
      */
-    var relocationPrefix: String = "zapperlib"
+    var relocationPrefix: String = "zapper"
 
     /**
      * The repositories URLs
      */
-    private var _repositories = mutableListOf<String>(MAVEN_CENTRAL)
+    private var _repositories = mutableListOf(MAVEN_CENTRAL)
 
     /**
      * The relocation rules

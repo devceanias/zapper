@@ -15,7 +15,7 @@ interface RepositoryDsl {
      * Tells Zapper to include the project repositories for
      * resolving dependencies
      */
-    fun includeProjectRepositories()
+    fun includeProjectRepositories(include: Boolean = true)
 }
 
 /**
@@ -31,7 +31,7 @@ internal class BasicRepositoryDsl : RepositoryDsl {
     /**
      * Should project repositories be included?
      */
-    var includeProjectRepositories = false
+    var includeProjectRepositories = true
 
     /**
      * Adds the given repository to the repositories list
@@ -44,8 +44,8 @@ internal class BasicRepositoryDsl : RepositoryDsl {
      * Tells Zapper to include the project repositories for
      * resolving dependencies
      */
-    override fun includeProjectRepositories() {
-        includeProjectRepositories = true
+    override fun includeProjectRepositories(include: Boolean) {
+        includeProjectRepositories = include
     }
 }
 

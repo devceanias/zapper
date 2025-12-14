@@ -41,6 +41,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.bukkit.Bukkit;
+import java.util.logging.Logger;
+import java.net.URL;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.net.URLClassLoader;
 
 public final class DependencyManager implements DependencyScope {
 
@@ -55,7 +60,7 @@ public final class DependencyManager implements DependencyScope {
     private final List<Relocation> relocations = new ArrayList<>();
     private final MetaReader meta = MetaReader.create();
 
-    public DependencyManager(@NotNull File directory, @NotNull URLClassLoaderWrapper classLoader) {
+    public DependencyManager(@NotNull final File directory, @NotNull final URLClassLoaderWrapper classLoader) {
         this.directory = directory;
         this.classLoader = classLoader;
         this.repositories.add(Repository.mavenCentral());
@@ -63,33 +68,90 @@ public final class DependencyManager implements DependencyScope {
 
     @SneakyThrows
     public void load() {
+        final Logger logger = Bukkit.getLogger();
+        final String prefix = "[" + meta.pluginName() + "] ";
+
         try {
-            List<Path> paths = new ArrayList<>();
-            for (Dependency dep : dependencies) {
-                File file = new File(directory, String.format("%s.%s-%s.jar", dep.getGroupId(), dep.getArtifactId(), dep.getVersion()));
-                File relocated = new File(directory, String.format("%s.%s-%s-relocated.jar", dep.getGroupId(),
+            final List<Path> paths = new ArrayList<>();
+            for (final Dependency dep : dependencies) {
+                logger.info(prefix + "Resolving dependency " + dep + ".");
+
+                final File file = new File(directory, String.format("%s.%s-%s.jar", dep.getGroupId(), dep.getArtifactId(), dep.getVersion()));
+                final File relocated = new File(directory, String.format("%s.%s-%s-relocated.jar", dep.getGroupId(),
                         dep.getArtifactId(), dep.getVersion()));
+
                 if (hasRelocations() && relocated.exists()) {
+                    logger.info(
+                        prefix +
+                        "Using existing relocated jar for " +
+                        dep + ": " +
+                        relocated.getName() +
+                        " (" +
+                        relocated.length() +
+                        " bytes)."
+                    );
+
                     paths.add(relocated.toPath());
+
                     continue;
                 }
+
                 if (!file.exists()) {
                     boolean succeeded = false;
                     List<String> failedRepos = null;
-                    for (Repository repository : repositories) {
-                        DependencyDownloadResult result = dep.download(file, repository);
+                    for (final Repository repository : repositories) {
+                        logger.info(
+                            prefix + "Attempting download of " + dep + " from repository " + repository + "."
+                        );
+
+                        final DependencyDownloadResult result = dep.download(file, repository);
                         if (result.wasSuccessful()) {
+                            logger.info(prefix + "Downloaded " + dep + " (" + file.length() + " bytes) from " + repository + ".");
                             succeeded = true;
                             break;
                         } else
                             (failedRepos == null ? failedRepos = new ArrayList<>() : failedRepos).add(repository.toString());
+
+                        final String failedPrefix = prefix + "Failed downloading " + dep + " from " + repository + ": ";
+
+                        if (result instanceof final DependencyDownloadResult.Failure failure) {
+                            logger.warning(failedPrefix + failure.getError());
+                        } else {
+                            logger.warning(failedPrefix + "unknown error.");
+                        }
                     }
+
                     if (failedRepos != null && !succeeded) {
-                        throw new DependencyDownloadException(dep, "Could not find dependency in any of the following repositories: " + String.join("\n", failedRepos));
+                        throw new DependencyDownloadException(
+                            dep,
+                            "Could not find dependency in any of the following repositories: " + String.join("\n", failedRepos)
+                        );
                     }
+                } else {
+                    logger.info(
+                        prefix +
+                        "Using cached jar for " +
+                        dep +
+                        ": " +
+                        file.getName() +
+                        " (" +
+                        file.length() +
+                        " bytes)."
+                    );
                 }
                 if (hasRelocations() && !relocated.exists()) {
                     Relocator.relocate(file, relocated, relocations);
+                    logger.info(
+                        prefix +
+                        "Relocated " +
+                        dep +
+                        " to " +
+                        relocated.getName() +
+                        " (" +
+                        relocated.length() +
+                        " bytes)."
+                    );
+
                     file.delete(); // no longer need the original dependency
                 }
                 if (hasRelocations())
@@ -98,42 +160,95 @@ public final class DependencyManager implements DependencyScope {
                     paths.add(file.toPath());
             }
             for (final Path path : paths) {
-                classLoader.addURL(path.toUri().toURL());
+                final URL url = path.toUri().toURL();
+
+                if (!addToPaperLibraryLoader(url, logger, prefix)) {
+                    classLoader.addURL(url);
+
+                    logger.info(prefix + "Added to plugin classloader: " + path.getFileName() + ".");
+                }
             }
-        } catch (DependencyDownloadException e) {
-            if (e.getCause() instanceof UnknownHostException) {
-                Bukkit.getLogger().info(
-                    "[" + meta.pluginName() + "] It appears you do not have an internet connection. Please provide an internet connection for once at least."
+        } catch (final DependencyDownloadException exception) {
+            if (exception.getCause() instanceof UnknownHostException) {
+                logger.info(
+                    prefix +
+                    "It appears you do not have an internet connection. Please provide an internet connection for once at least."
                 );
 
                 FAILED_TO_DOWNLOAD = true;
-            } else throw e;
+            } else throw exception;
+        } finally {
+            logger.info(prefix + "Dependency resolution finished. Total dependencies: " + dependencies.size() + ".");
+        }
+    }
+
+    /**
+     * Attempts to add a URL to Paper's library loader (similar to Libby).
+     */
+    private boolean addToPaperLibraryLoader(
+        final @NotNull URL url, final @NotNull Logger logger, final @NotNull String prefix
+    ) {
+        try {
+            final Class<?> paperLoader = Class.forName(
+                "io.papermc.paper.plugin.entrypoint.classloader.PaperPluginClassLoader"
+            );
+
+            final ClassLoader pluginLoader = ZapperPlugin.class.getClassLoader();
+
+            if (!paperLoader.isAssignableFrom(pluginLoader.getClass())) {
+                return false;
+            }
+
+            final Field loaderField = paperLoader.getDeclaredField("libraryLoader");
+
+            loaderField.setAccessible(true);
+
+            final Object libraryLoader = loaderField.get(pluginLoader);
+
+            if (!(libraryLoader instanceof final URLClassLoader urlLoader)) {
+                return false;
+            }
+
+            final Method addMethod = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
+
+            addMethod.setAccessible(true);
+            addMethod.invoke(urlLoader, url);
+
+            logger.info(prefix + "Added to Paper library loader: " + url.getPath() + ".");
+
+            return true;
+        } catch (final ClassNotFoundException ignored) {
+            return false;
+        } catch (final Throwable throwable) {
+            logger.warning(prefix + "Error adding URL to Paper library loader: " + throwable.getMessage() + "!");
+
+            return false;
         }
     }
 
     @Override
-    public void dependency(@NotNull Dependency dependency) {
+    public void dependency(@NotNull final Dependency dependency) {
         dependencies.add(dependency);
     }
 
-    public void dependency(@NotNull String dependency) {
-        String[] parts = COLON.split(dependency);
+    public void dependency(@NotNull final String dependency) {
+        final String[] parts = COLON.split(dependency);
         dependencies.add(new Dependency(parts[0], parts[1], parts[2], parts.length == 4 ? parts[3] : null));
     }
 
-    public void dependency(@NotNull String groupId, @NotNull String artifactId, @NotNull String version) {
+    public void dependency(@NotNull final String groupId, @NotNull final String artifactId, @NotNull final String version) {
         dependencies.add(new Dependency(groupId, artifactId, version));
     }
 
-    public void dependency(@NotNull String groupId, @NotNull String artifactId, @NotNull String version, @Nullable String classifier) {
+    public void dependency(@NotNull final String groupId, @NotNull final String artifactId, @NotNull final String version, @Nullable final String classifier) {
         dependencies.add(new Dependency(groupId, artifactId, version, classifier));
     }
 
-    public void relocate(@NotNull Relocation relocation) {
+    public void relocate(@NotNull final Relocation relocation) {
         relocations.add(relocation);
     }
 
-    public void repository(@NotNull Repository repository) {
+    public void repository(@NotNull final Repository repository) {
         repositories.add(repository);
     }
 
